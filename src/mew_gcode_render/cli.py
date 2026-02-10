@@ -36,6 +36,73 @@ def transformToCylindrical(p: list[float], diameter: float, cylindrical_long_axi
     return [x, y, z]
 
 
+def read_gcode_file(filename: str) -> list:
+    """
+    Parameter:
+        filename: The path to the gcode file to read.
+    Return:
+        a list of gcode commands parsed from the given file.
+    throws:
+        FileNotFoundError: if the file does not exist.
+        ValueError: if the file is empty or contains no valid gcode commands.
+    """
+    if not os.path.exists(filename):
+        print(f"File {filename} does not exist.")
+        raise FileNotFoundError(f"File {filename} does not exist.")
+
+    with open(filename, "r") as f:
+        gcodes = [parse_gcode(line) for line in f]
+
+    if len(gcodes) == 0:
+        print("No gcode commands found in the file.")
+        raise ValueError("No gcode commands found in the file.")
+
+    return gcodes
+
+
+def gcode_to_points(
+    gcodes: list,
+    csv_filename: str,
+    diameter: float,
+    thickness: float,
+    cylindrical_long_axis: str,
+    curve_resolution: int,
+    x_axis: str,
+    y_axis: str,
+    z_axis: str,
+):
+
+    xy_scale = 1.0 if thickness == 0 else (diameter + thickness) / diameter
+
+    geometry_parser = GeometryParser()
+    geometry_parser.x_axis = x_axis
+    geometry_parser.y_axis = y_axis
+    geometry_parser.z_axis = z_axis
+    geometry_parser.process(gcodes)
+
+    print(len(geometry_parser.geometry), "curves parsed from gcode")
+
+    geometry_points = []
+    for curve in geometry_parser.geometry:
+        points = curve.compute_points(curve_resolution)
+        if diameter > 0:
+            transformed_points = [transformToCylindrical(p, diameter, cylindrical_long_axis, xy_scale) for p in points]
+            geometry_points.extend(transformed_points)
+        else:
+            geometry_points.extend(points)
+
+    return geometry_points
+
+
+def write_points_to_csv(points: list[list[float]], csv_filename: str):
+    with open(csv_filename, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["x", "y", "z"])
+        writer.writerows(points)
+
+    print("Exported to", csv_filename)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Export gcode to csv")
     parser.add_argument("filename", help="Gcode file to export to csv")
@@ -61,40 +128,19 @@ def main():
     )
     args = parser.parse_args()
 
-    assert os.path.exists(args.filename), "File does not exist"
-    filename = Path(args.filename)
+    gcodes = read_gcode_file(args.filename)
+    csv_filename = Path(args.filename).with_suffix(".csv")
+    geometry_points = gcode_to_points(
+        gcodes,
+        csv_filename,
+        args.diameter,
+        args.thickness,
+        cylindrical_long_axis=args.cylindrical_long_axis,
+        curve_resolution=args.curve_resolution,
+        x_axis=args.x_axis,
+        y_axis=args.y_axis,
+        z_axis=args.z_axis,
+    )
 
-    xy_scale = 1.0 if args.thickness == 0 else (args.diameter + args.thickness) / args.diameter
-    csv_filename = filename.with_suffix(".csv")
-
-    with open(args.filename, "r") as f:
-        gcodes = [parse_gcode(line) for line in f]
-
-    if len(gcodes) == 0:
-        print("No gcode commands found in the file.")
-        return
-
-    geometry_parser = GeometryParser()
-    geometry_parser.x_axis = args.x_axis
-    geometry_parser.y_axis = args.y_axis
-    geometry_parser.z_axis = args.z_axis
-    geometry_parser.process(gcodes)
-    print(len(geometry_parser.geometry), "curves parsed from gcode")
-
-    geometry_points = []
-    for curve in geometry_parser.geometry:
-        points = curve.compute_points(args.curve_resolution)
-        if args.diameter > 0:
-            transformed_points = [
-                transformToCylindrical(p, args.diameter, args.cylindrical_long_axis, xy_scale) for p in points
-            ]
-            geometry_points.extend(transformed_points)
-        else:
-            geometry_points.extend(points)
-
-    with open(csv_filename, "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["x", "y", "z"])
-        writer.writerows(geometry_points)
-
-    print("Exported to", csv_filename)
+    write_points_to_csv(geometry_points, csv_filename)
+    print("Done!")
