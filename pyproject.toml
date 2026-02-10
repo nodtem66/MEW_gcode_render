@@ -1,0 +1,26 @@
+[project]
+name = "mew_gcode_render"
+version = "0.1.0"
+description = "Program to convert gcode to a csv file for 3D rendering using geometrical nodes (Blender)"
+authors = [{ name = "Jirawat Iamsamang", email = "j.iamsamang@tue.nl" }]
+dependencies = [
+]
+
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+
+[dependency-groups]
+test = []
+lint = ["ruff"]
+
+[tool.ruff]
+exclude = ["*.ipynb", "_*.py"]
+
+line-length = 120
+indent-width = 4
+target-version = "py313"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
