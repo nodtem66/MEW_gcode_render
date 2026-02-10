@@ -10,6 +10,9 @@ requires-python = ">=3.10"
 readme = "README.md"
 license = { text = "MIT" }
 
+[project.scripts]
+gcode2csv = "mew_gcode_render.cli:main"
+
 [dependency-groups]
 test = []
 lint = ["ruff"]

@@ -1,10 +1,12 @@
 import math
+
 from mew_gcode_render.gcode_reader import GcodeCommand
 
 RELATIVE_POSITION = 0
 ABSOLUTE_POSITION = 1
 
-def linspace(start:float, stop:float, num:int=10) -> list[float]:
+
+def linspace(start: float, stop: float, num: int = 10) -> list[float]:
     """
     linspace(start, stop, num) returns num evenly spaced samples, calculated over the interval [start, stop].
     If num is 1, the function returns an array containing only the start value. If num is 0, the function returns an empty array.
@@ -29,6 +31,7 @@ def linspace(start:float, stop:float, num:int=10) -> list[float]:
             step = (stop - start) / (num - 1)
             return [start + i * step for i in range(num)]
 
+
 class Curve:
     """Class representing a curve segment."""
 
@@ -39,14 +42,14 @@ class Curve:
         self.feedrate = feedrate
         for key, value in kwargs.items():
             setattr(self, key, value)
-  
+
     def compute_points(self, num_points=20):
         """
         Get a list of points along the curve.
         Parameters:
             num_points: number of points to generate along the curve (default: 20)
         Returns:
-            list of points along the curve 
+            list of points along the curve
         """
         if self.type == "line":
             x_points = linspace(self.start[0], self.end[0], num_points)
@@ -71,7 +74,7 @@ class Curve:
 
             if abs(angleCalc) < 1e-3:
                 angleCalc = 2 * math.pi if not isCw else -2 * math.pi
-            
+
             points = []
             for i in range(num_points + 1):
                 t = i / num_points

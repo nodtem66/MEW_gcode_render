@@ -7,18 +7,20 @@ from pathlib import Path
 from mew_gcode_render.gcode_reader import parse_gcode
 from mew_gcode_render.geometry_parser import GeometryParser
 
+
 def mapCoordinates(p: list[float], cylindrical_long_axis: str, xy_scale: float) -> dict[str, float]:
     x = xy_scale * p[0]
     y = xy_scale * p[1]
     z = xy_scale * p[2] if len(p) > 2 else 0
-    
+
     if cylindrical_long_axis == "x":
-      return { "mapX": x, "mapY": y, "mapZ": z }
+        return {"mapX": x, "mapY": y, "mapZ": z}
     elif cylindrical_long_axis == "y":
-      return { "mapX": y, "mapY": x, "mapZ": z }
+        return {"mapX": y, "mapY": x, "mapZ": z}
     elif cylindrical_long_axis == "z":
-      return { "mapX": z, "mapY": y, "mapZ": x }
+        return {"mapX": z, "mapY": y, "mapZ": x}
     raise ValueError(f"Invalid cylindrical_long_axis: {cylindrical_long_axis}")
+
 
 def transformToCylindrical(p: list[float], diameter: float, cylindrical_long_axis: str, xy_scale: float):
     mapped_coords = mapCoordinates(p, cylindrical_long_axis, xy_scale)
@@ -32,6 +34,7 @@ def transformToCylindrical(p: list[float], diameter: float, cylindrical_long_axi
     y = xy_scale * height * math.cos(theta)
     z = xy_scale * height * math.sin(theta)
     return [x, y, z]
+
 
 def main():
     parser = argparse.ArgumentParser(description="Export gcode to csv")
@@ -49,9 +52,14 @@ def main():
         default="x",
         choices=["x", "y", "z"],
     )
-    parser.add_argument("-r", "--curve_resolution", type=int, help="Number of points to sample per curve segment (default: 20)", default=20)
+    parser.add_argument(
+        "-r",
+        "--curve_resolution",
+        type=int,
+        help="Number of points to sample per curve segment (default: 20)",
+        default=20,
+    )
     args = parser.parse_args()
-
 
     assert os.path.exists(args.filename), "File does not exist"
     filename = Path(args.filename)
@@ -65,7 +73,7 @@ def main():
     if len(gcodes) == 0:
         print("No gcode commands found in the file.")
         return
-    
+
     geometry_parser = GeometryParser()
     geometry_parser.x_axis = args.x_axis
     geometry_parser.y_axis = args.y_axis
@@ -77,7 +85,9 @@ def main():
     for curve in geometry_parser.geometry:
         points = curve.compute_points(args.curve_resolution)
         if args.diameter > 0:
-            transformed_points = [transformToCylindrical(p, args.diameter, args.cylindrical_long_axis, xy_scale) for p in points]
+            transformed_points = [
+                transformToCylindrical(p, args.diameter, args.cylindrical_long_axis, xy_scale) for p in points
+            ]
             geometry_points.extend(transformed_points)
         else:
             geometry_points.extend(points)
