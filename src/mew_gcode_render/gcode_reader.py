@@ -5,24 +5,23 @@ Last modified: 2026-02-09
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict
 
 
 @dataclass
 class GcodeCommand:
-    cmd: str | None
-    args: Dict[str, Any] | None
-    comment: str | None
-    tag: Dict[str, Any] | None
-
     """Class representing a GCode command."""
 
-    def __init__(self):
-        self.cmd = None
-        self.args = {}
-        self.comment = None
-        self.tag = {}
+    cmd: str = ""
+    args: Dict[str, Any] = field(default_factory=dict)
+    comment: str = ""
+    tag: Dict[str, Any] = field(default_factory=dict)
+
+    @staticmethod
+    def parse(gcode: str) -> "GcodeCommand":
+        """Static method to parse a GCode string into a GcodeCommand object."""
+        return parse_gcode(gcode)
 
 
 def default_case_transform_fn(key: str) -> str:

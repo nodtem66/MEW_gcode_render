@@ -22,7 +22,7 @@ def mapCoordinates(p: list[float], cylindrical_long_axis: str, xy_scale: float) 
     raise ValueError(f"Invalid cylindrical_long_axis: {cylindrical_long_axis}")
 
 
-def transformToCylindrical(p: list[float], diameter: float, cylindrical_long_axis: str, xy_scale: float):
+def transformToCylindrical(p: list[float], diameter: float, cylindrical_long_axis: str = "x", xy_scale: float = 1.0):
     mapped_coords = mapCoordinates(p, cylindrical_long_axis, xy_scale)
 
     radius = diameter / 2.0
@@ -62,7 +62,6 @@ def read_gcode_file(filename: str) -> list:
 
 def gcode_to_points(
     gcodes: list,
-    csv_filename: str,
     diameter: float,
     thickness: float,
     cylindrical_long_axis: str,
@@ -74,10 +73,7 @@ def gcode_to_points(
 
     xy_scale = 1.0 if thickness == 0 else (diameter + thickness) / diameter
 
-    geometry_parser = GeometryParser()
-    geometry_parser.x_axis = x_axis
-    geometry_parser.y_axis = y_axis
-    geometry_parser.z_axis = z_axis
+    geometry_parser = GeometryParser(x_axis=x_axis, y_axis=y_axis, z_axis=z_axis)
     geometry_parser.process(gcodes)
 
     print(len(geometry_parser.geometry), "curves parsed from gcode")
@@ -98,7 +94,9 @@ def write_points_to_csv(points: list[list[float]], csv_filename: str):
     with open(csv_filename, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["x", "y", "z"])
-        writer.writerows(points)
+        # set precision to 6 decimal places
+        for point in points:
+            writer.writerow([f"{coord:.6f}" for coord in point])
 
     print("Exported to", csv_filename)
 
@@ -132,7 +130,6 @@ def main():
     csv_filename = Path(args.filename).with_suffix(".csv")
     geometry_points = gcode_to_points(
         gcodes,
-        csv_filename,
         args.diameter,
         args.thickness,
         cylindrical_long_axis=args.cylindrical_long_axis,
